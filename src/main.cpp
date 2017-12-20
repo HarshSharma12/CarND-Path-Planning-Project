@@ -164,78 +164,49 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
 
 }
 
-int getLaneShiftVal(int prev_size, int curr_lane, double car_s, vector < vector < double > > & sensor_fusion) {
-  int new_lane = curr_lane;
-  bool can_change = false;
-  if (curr_lane == 2 || curr_lane == 0) {
-    new_lane = 1;
-  }
-  if (new_lane != curr_lane) {
-    for (int loc = 0; loc < sensor_fusion.size(); loc++) {
-      float d = sensor_fusion[loc][6];
-      if (d < (2 + 4 * new_lane + 2) && d > (2 + 4 * new_lane - 2)) {
-        double vx = sensor_fusion[loc][3];
-        double vy = sensor_fusion[loc][4];
-        double check_speed = sqrt( vx*vx + vy*vy );
-        double check_car_s = sensor_fusion[loc][5];
+int getLaneShiftVal (int prev_size, int curr_lane, double car_s, vector < vector < double > >&sensor_fusion)
+{
+    int new_lane = curr_lane;
+    bool can_change = false;
+    vector < bool > laneAvailable = {true, true, true};
+    laneAvailable[curr_lane] = false;
 
-        check_car_s += ((double) prev_size * .02 * check_speed);
-        //std::cout << "side lane: "+std::to_string((check_car_s - car_s)) << std::endl;
-        if ((check_car_s - car_s) > -5 && (check_car_s-car_s)< 20){
-          //std::cout << "Too Close ..." << std::endl;
-          can_change = false;
-          break;
-        }
-      }
-    }
-  } 
-  else {
-    new_lane = 0;
-    for (int loc = 0; loc < sensor_fusion.size(); loc++) {
-      float d = sensor_fusion[loc][6];
-      if (d < (2 + 4 * new_lane + 2) && d > (2 + 4 * new_lane - 2)) {
-        double vx = sensor_fusion[loc][3];
-        double vy = sensor_fusion[loc][4];
-        double check_speed = sqrt( vx*vx + vy*vy );
-        double check_car_s = sensor_fusion[loc][5];
-
-        check_car_s += ((double) prev_size * .02 * check_speed);
-        double dist = check_car_s - car_s;
-        //std::cout << "middle lane to left: "+std::to_string(dist) << std::endl;
-        if ((check_car_s - car_s) > -5 && (check_car_s-car_s)< 20){
-          //std::cout << "Too Close ..." << std::endl;
-          can_change = false;
-          break;
-        }
-      }
-    }
-
-    if (!can_change) {
-      new_lane = 2;
-      for (int loc = 0; loc < sensor_fusion.size(); loc++) {
+    for (int loc = 0; loc < sensor_fusion.size (); loc++)
+    {
         float d = sensor_fusion[loc][6];
-        if (d < (2 + 4 * new_lane + 2) && d > (2 + 4 * new_lane - 2)) {
-          double vx = sensor_fusion[loc][3];
-          double vy = sensor_fusion[loc][4];
-          double check_speed = sqrt( vx*vx + vy*vy );
-          double check_car_s = sensor_fusion[loc][5];
+        double vx = sensor_fusion[loc][3];
+        double vy = sensor_fusion[loc][4];
+        double check_speed = sqrt (vx * vx + vy * vy);
+        double check_car_s = sensor_fusion[loc][5];
 
-          check_car_s += ((double) prev_size * .02 * check_speed);
-          //std::cout << "middle lane to right: "+std::to_string((check_car_s - car_s)) << std::endl;
-          if ((check_car_s - car_s) > -5 && (check_car_s-car_s)< 20){
-            //std::cout << "Too Close ..." << std::endl;
-            can_change = false;
-            break;
-          }
+        int target_car_lane = d / 4;
+        check_car_s += ((double) prev_size * .02 * check_speed);
+        if ((target_car_lane != curr_lane) && laneAvailable[target_car_lane]
+                && (car_s - check_car_s) < 10.0 && (check_car_s - car_s) < 30.0)
+        {
+            {
+                laneAvailable[target_car_lane] = false;
+            }
         }
-      }
     }
-  }
-  if (can_change)
-    return (new_lane-curr_lane);
-  else
-    return 0;
+
+    // switch only to immediately next lane
+    if ((curr_lane == 0 || curr_lane == 2) && laneAvailable[1])
+    {
+        new_lane = 1;
+    }
+    else if (curr_lane == 1)
+    {
+        if (laneAvailable[0])
+            new_lane = 0;
+        else if (laneAvailable[2])
+            new_lane = 2;
+    }
+
+    return (new_lane - curr_lane);
 }
+
+
 int main() {
   uWS::Hub h;
 
@@ -323,7 +294,6 @@ int main() {
             }
 
             bool too_close = false;
-
             // Find ref_v to use
             for(int loc = 0; loc < sensor_fusion.size(); loc++){
               float d = sensor_fusion[loc][6];

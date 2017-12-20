@@ -45,22 +45,30 @@ For the fourth goal, I implemented a lane changing policy.
 #### Lane Changing 
 1. Lane change takes place, when the car in front of the ego vehicle moves slower than the ego desired speed, and it is safe to change to the lane left, or right.
 1. It is considered safe to change lane if there is no vehicle between -5 and +20 meters from the ego longitudinal position.
+1. I go over all the available sensor data and see all the lanes that are available. and then proceed to change only if the adjoining lane is available  
 1. The final rubric to change the lanes is as follows
 ```
-lane == 2 (leftmost) or lane == 0 (righmost)
-	Check if any vehicle in center lane is close (between -5 to 20 m), 
-		if not shift to center lane
-		else stay
+Check the availability of all the lanes
 
-lane == 1 (center)
-	if right lane available,  shift
-	else if right lane is available, shift
-	else stay
+if lane == 2 (leftmost) or lane == 0 (righmost)
+	 if center lane available
+	 	shift
+	 else 
+	 	stay
+else if lane == 1 (center)
+	if left lane available,  
+		shift
+	else if right lane is available
+		shift
+	else
+		stay
 ```
 
 
 
 ## Results and Conclusions
+
+Complete video - [https://www.youtube.com/watch?v=-7QPip0AEdk](https://www.youtube.com/watch?v=-7QPip0AEdk)
 
 1. The simulation run for some time without incidents occurring, sometimes exceeding 30'.[Success](1.png?raw=true "Success")
 1. A rare case of incident was a collision, when a car from a neighbouring lane, having more or less the same longitudinal coordinate as ego, suddenly changed to the ego lane.
